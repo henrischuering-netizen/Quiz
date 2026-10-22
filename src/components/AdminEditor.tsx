@@ -6,19 +6,16 @@ import {
   createCategory,
   deleteCategory,
   deleteQuestion,
-  loadQuestionPool,
+  loadAdminData,
   renameCategory,
   saveQuestion,
   type Category,
   type Question,
 } from "@/lib/questions";
-import { isSupabaseConfigured } from "@/lib/supabase";
-
-const input = "w-full rounded-lg bg-stage px-3 py-2 outline-none ring-gold focus:ring-2";
+import { errorMessage, inputClass as input } from "./ui";
 
 function errorText(e: unknown): string {
-  const message =
-    e instanceof Error ? e.message : typeof e === "object" && e && "message" in e ? String(e.message) : String(e);
+  const message = errorMessage(e);
   return message.includes("row-level security")
     ? "Keine Berechtigung. Ist dein Account als Admin eingetragen?"
     : message;
@@ -30,32 +27,18 @@ export default function AdminEditor() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [newCategory, setNewCategory] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(isSupabaseConfigured());
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!isSupabaseConfigured()) return;
-    loadQuestionPool()
-      .then((pool) => {
-        setCategories(pool.categories);
-        setQuestions(pool.questions);
-        setSelectedId(pool.categories[0]?.id ?? null);
+    loadAdminData()
+      .then((data) => {
+        setCategories(data.categories);
+        setQuestions(data.questions);
+        setSelectedId(data.categories[0]?.id ?? null);
       })
       .catch((e) => setError(errorText(e)))
       .finally(() => setLoading(false));
   }, []);
-
-  if (!isSupabaseConfigured()) {
-    return (
-      <div className="rounded-2xl bg-panel p-6 text-white/80">
-        <h2 className="mb-2 text-xl font-bold text-white">Supabase ist noch nicht verbunden</h2>
-        <p>
-          Lege im Projektordner eine Datei <code>.env.local</code> an (Vorlage: <code>.env.example</code>) und
-          trage <code>NEXT_PUBLIC_SUPABASE_URL</code> und <code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code> ein. Danach
-          den Dev-Server neu starten. Bis dahin nutzt das Spiel die eingebauten Beispielfragen.
-        </p>
-      </div>
-    );
-  }
 
   async function run(action: () => Promise<void>) {
     setError(null);

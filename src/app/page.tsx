@@ -1,28 +1,34 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import AppHeader from "@/components/AppHeader";
+import { useAuth } from "@/components/AuthProvider";
+import Dashboard from "@/components/Dashboard";
+import RequireAuth from "@/components/RequireAuth";
+import { isAdmin } from "@/lib/auth";
 
 export default function Home() {
+  const { session } = useAuth();
+  const [admin, setAdmin] = useState(false);
+  const userId = session?.user.id;
+
+  useEffect(() => {
+    if (userId) isAdmin(userId).then(setAdmin).catch(() => setAdmin(false));
+  }, [userId]);
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-10 p-6 text-center">
-      <div>
-        <h1 className="text-5xl font-extrabold tracking-tight text-gold sm:text-7xl">Quiz Grid</h1>
-        <p className="mt-4 text-lg text-white/70">
-          Kategorien wählen, buzzern, Punkte sammeln. Ein PC, alle Spieler.
-        </p>
-      </div>
-      <div className="flex flex-col gap-4 sm:flex-row">
-        <Link
-          href="/play"
-          className="rounded-xl bg-gold px-8 py-4 text-xl font-bold text-stage transition hover:brightness-110"
-        >
-          Neues Spiel
-        </Link>
-        <Link
-          href="/admin"
-          className="rounded-xl border border-white/20 px-8 py-4 text-xl font-semibold transition hover:bg-white/10"
-        >
-          Fragen verwalten
-        </Link>
-      </div>
+    <main className="mx-auto flex min-h-dvh max-w-6xl flex-col gap-6 p-4 sm:p-6">
+      <AppHeader>
+        {admin && userId && (
+          <Link href="/admin" className="text-white/70 underline hover:text-white">
+            Fragen verwalten
+          </Link>
+        )}
+      </AppHeader>
+      <RequireAuth>
+        <Dashboard />
+      </RequireAuth>
     </main>
   );
 }

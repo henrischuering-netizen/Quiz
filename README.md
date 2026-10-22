@@ -1,18 +1,18 @@
 # Quiz Grid
 
-Quiz-Spiel im Jeopardy-Stil für einen PC (am besten an Beamer oder TV). Oben stehen die Kategorien, darunter die Punktwerte 100 / 200 / 300 / 500. Der Gamemaster wählt eine Frage, die Spieler buzzern mit ihrer eigenen Taste. Richtig gibt die Punkte, falsch zieht die Hälfte ab, und die anderen dürfen nachbuzzern. Ist das Grid leer, folgt Runde 2 mit neuen Kategorien und doppelten Punkten.
+Online-Quiz im Jeopardy-Stil. Jeder spielt an seinem eigenen Gerät. Oben stehen die Kategorien, darunter die Punktwerte 100 / 200 / 300 / 500. Der Host wählt eine Frage, die Spieler buzzern. Richtig gibt die Punkte, falsch zieht die Hälfte ab. Ist das Grid leer, folgt Runde 2 mit neuen Kategorien und doppelten Punkten.
 
-## Steuerung
+## So läuft ein Spiel
 
-| Wer | Taste | Aktion |
-| --- | --- | --- |
-| Spieler | eigene Taste (Standard A, L, Q, P, Z, M) oder Klick aufs Spielerfeld | buzzern |
-| Gamemaster | R | richtig |
-| Gamemaster | F | falsch |
-| Gamemaster | Leertaste | Antwort auflösen (keine Punkte) |
-| Gamemaster | Enter / Esc | zurück zum Board |
+1. **Registrieren** mit E-Mail, Passwort und Benutzername.
+2. **Freunde hinzufügen:** Im Dashboard den Benutzernamen eintragen. Der andere nimmt die Anfrage an.
+3. **Lobby erstellen** und den Modus wählen:
+   - **Textmodus:** Wer dran ist, tippt seine Antwort. Der Host sieht sie und entscheidet Richtig oder Falsch.
+   - **Sprachmodus:** Kein Textfeld. Die Antwort wird im Sprachchat (z. B. Discord) gesagt, der Host bewertet per Klick.
+4. **Freunde einladen** (die Einladung erscheint in ihrem Dashboard) oder den 6-stelligen Code teilen.
+5. **Spielen:** Der Host öffnet eine Frage. Alle können buzzern (Knopf oder Leertaste) und landen in einer Warteschlange. Der Schnellste ist dran. Ist seine Antwort falsch, ist automatisch der Nächste dran. Der Host kann jederzeit auflösen (keine Punkte).
 
-Mit der Maus über einem Spielerfeld erscheinen ±100-Knöpfe für Korrekturen. Der Spielstand wird im Browser gespeichert und übersteht ein Neuladen.
+Der Host spielt nicht mit, er ist Gamemaster und sieht als Einziger die Lösung vorab.
 
 ## Lokal starten
 
@@ -21,28 +21,34 @@ npm install
 npm run dev
 ```
 
-Dann <http://localhost:3000> öffnen. Ohne Supabase nutzt das Spiel die eingebauten Beispielfragen aus `src/lib/sampleQuestions.ts`.
+Dann <http://localhost:3000> öffnen. Dafür braucht es eine `.env.local` mit den Supabase-Zugangsdaten (siehe unten).
 
 ## Supabase einrichten
 
 1. Auf <https://supabase.com> ein Projekt anlegen.
-2. Im **SQL Editor** zuerst `supabase/migrations/001_init.sql` und danach `supabase/seed.sql` (Beispielfragen) ausführen.
-3. Unter **Project Settings → API** die Project URL und den `anon`-Key kopieren.
-4. `.env.example` nach `.env.local` kopieren und die Werte eintragen, dann `npm run dev` neu starten.
+2. Im **SQL Editor** nacheinander ausführen, jeweils in einem leeren Editor:
+   1. `supabase/migrations/001_init.sql` (Kategorien und Fragen)
+   2. `supabase/seed.sql` (Beispielfragen)
+   3. `supabase/migrations/002_admin_auth.sql` (Admin-Rechte)
+   4. `supabase/migrations/003_online.sql` (Accounts, Freunde, Online-Spiele)
+3. **Authentication → Sign In / Providers:** „Allow new users to sign up“ einschalten. Optional „Confirm email“ ausschalten, dann entfällt die Bestätigungsmail.
+4. **Authentication → URL Configuration:** als Site URL die Adresse der Seite eintragen (z. B. `https://quiz-azure-pi.vercel.app`), damit der Link in der Bestätigungsmail stimmt.
+5. Unter **Project Settings → API** die Project URL und den Publishable/anon-Key kopieren, `.env.example` nach `.env.local` kopieren und die Werte eintragen.
 
-Fragen pflegst du danach unter `/admin`. Jede Kategorie braucht mindestens eine Frage pro Punktstufe, sonst taucht sie nicht im Spiel auf. Gibt es mehrere Fragen pro Stufe, wird zufällig eine gewählt. Für zwei Runden ohne Wiederholung braucht es 10 vollständige Kategorien.
+### Fragen verwalten (Admin)
 
-### Admin-Login
+Fragen pflegst du unter `/admin`. Nur Accounts in der Tabelle `public.admins` dürfen dort etwas ändern:
 
-`/admin` ist per Supabase Auth geschützt. Lesen dürfen alle (das Spiel braucht die Fragen), ändern dürfen nur Accounts in der Tabelle `public.admins`.
+```sql
+insert into public.admins (user_id) select id from auth.users where email = 'deine@email.de';
+```
 
-1. Im SQL Editor `supabase/migrations/002_admin_auth.sql` ausführen.
-2. **Authentication → Users → Add user → Create new user**: E-Mail und Passwort für dich anlegen und „Auto Confirm User“ anhaken.
-3. Im SQL Editor dich als Admin eintragen:
-   ```sql
-   insert into public.admins (user_id) select id from auth.users where email = 'deine@email.de';
-   ```
-4. Empfohlen: unter **Authentication → Sign In / Providers** „Allow new users to sign up“ ausschalten. Fremde Accounts hätten zwar ohnehin keine Schreibrechte, so entstehen aber gar keine.
+Jede Kategorie braucht mindestens eine Frage pro Punktstufe, sonst taucht sie nicht im Spiel auf. Gibt es mehrere Fragen pro Stufe, wird zufällig eine gewählt. Für zwei Runden ohne Wiederholung braucht es 10 vollständige Kategorien.
+
+### Sicherheit
+
+- Die Spiel-Logik läuft in Postgres-Funktionen (`003_online.sql`). Sie prüfen, wer was darf: Nur der Host öffnet und bewertet Fragen, nur wer dran ist, darf antworten. Die Buzzer-Reihenfolge bestimmt der Server.
+- Die Spalte `questions.answer` ist für Spieler nicht lesbar. Die Lösung bekommt nur der Host über `get_game_state`, alle anderen erst nach dem Auflösen.
 
 ## Auf Vercel deployen
 
@@ -52,10 +58,6 @@ Fragen pflegst du danach unter `/admin`. Jede Kategorie braucht mindestens eine 
 
 ## Anpassen
 
-In `src/lib/game.ts`:
-
-- `BASE_POINTS`: Punktwerte der Zeilen (für eine 400er-Zeile ergänzen und in der Migration `difficulty between 1 and 5` erlauben).
-- `CATEGORIES_PER_ROUND`: Spalten pro Runde.
-- `ROUND_MULTIPLIER`: Anzahl der Runden und Punkte-Multiplikator je Runde.
+Punkte, Kategorien pro Runde und Rundenzahl stehen in `src/lib/game.ts` und in der Funktion `_build_round` in `supabase/migrations/003_online.sql`. Bei Änderungen beides anpassen.
 
 Nach Änderungen an `src/lib/sampleQuestions.ts` erzeugt `npm run seed:sql` die `supabase/seed.sql` neu.
