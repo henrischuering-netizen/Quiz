@@ -17,7 +17,11 @@ import { isSupabaseConfigured } from "@/lib/supabase";
 const input = "w-full rounded-lg bg-stage px-3 py-2 outline-none ring-gold focus:ring-2";
 
 function errorText(e: unknown): string {
-  return e instanceof Error ? e.message : typeof e === "object" && e && "message" in e ? String(e.message) : String(e);
+  const message =
+    e instanceof Error ? e.message : typeof e === "object" && e && "message" in e ? String(e.message) : String(e);
+  return message.includes("row-level security")
+    ? "Keine Berechtigung. Ist dein Account als Admin eingetragen?"
+    : message;
 }
 
 export default function AdminEditor() {

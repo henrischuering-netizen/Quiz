@@ -32,7 +32,17 @@ Dann <http://localhost:3000> öffnen. Ohne Supabase nutzt das Spiel die eingebau
 
 Fragen pflegst du danach unter `/admin`. Jede Kategorie braucht mindestens eine Frage pro Punktstufe, sonst taucht sie nicht im Spiel auf. Gibt es mehrere Fragen pro Stufe, wird zufällig eine gewählt. Für zwei Runden ohne Wiederholung braucht es 10 vollständige Kategorien.
 
-> **Hinweis:** In dieser ersten Version darf jeder mit dem Link Fragen unter `/admin` bearbeiten (RLS erlaubt Schreiben für `anon`). Bevor die Seite öffentlich ist, sollte `/admin` mit Supabase Auth abgesichert und die Schreib-Policies auf eingeloggte Nutzer beschränkt werden.
+### Admin-Login
+
+`/admin` ist per Supabase Auth geschützt. Lesen dürfen alle (das Spiel braucht die Fragen), ändern dürfen nur Accounts in der Tabelle `public.admins`.
+
+1. Im SQL Editor `supabase/migrations/002_admin_auth.sql` ausführen.
+2. **Authentication → Users → Add user → Create new user**: E-Mail und Passwort für dich anlegen und „Auto Confirm User“ anhaken.
+3. Im SQL Editor dich als Admin eintragen:
+   ```sql
+   insert into public.admins (user_id) select id from auth.users where email = 'deine@email.de';
+   ```
+4. Empfohlen: unter **Authentication → Sign In / Providers** „Allow new users to sign up“ ausschalten. Fremde Accounts hätten zwar ohnehin keine Schreibrechte, so entstehen aber gar keine.
 
 ## Auf Vercel deployen
 

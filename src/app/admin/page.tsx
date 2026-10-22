@@ -1,5 +1,6 @@
 import Link from "next/link";
 import AdminEditor from "@/components/AdminEditor";
+import AdminGate from "@/components/AdminGate";
 
 export default function AdminPage() {
   return (
@@ -10,7 +11,9 @@ export default function AdminPage() {
         </Link>
         <h1 className="text-lg font-semibold text-white/70">Fragen verwalten</h1>
       </header>
-      <AdminEditor />
+      <AdminGate>
+        <AdminEditor />
+      </AdminGate>
     </main>
   );
 }

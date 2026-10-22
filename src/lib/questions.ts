@@ -47,6 +47,9 @@ export async function loadQuestionPool(): Promise<QuestionPool> {
   return { categories: cats.data, questions: qs.data, source: "supabase" };
 }
 
+// Ohne Rechte meldet Supabase bei update/delete keinen Fehler, sondern ändert einfach nichts.
+const NOT_ALLOWED = "Keine Berechtigung. Ist dein Account als Admin eingetragen?";
+
 export async function createCategory(name: string): Promise<Category> {
   const { data, error } = await getSupabase()
     .from("categories")
@@ -58,13 +61,15 @@ export async function createCategory(name: string): Promise<Category> {
 }
 
 export async function renameCategory(id: string, name: string): Promise<void> {
-  const { error } = await getSupabase().from("categories").update({ name }).eq("id", id);
+  const { data, error } = await getSupabase().from("categories").update({ name }).eq("id", id).select("id");
   if (error) throw error;
+  if (!data.length) throw new Error(NOT_ALLOWED);
 }
 
 export async function deleteCategory(id: string): Promise<void> {
-  const { error } = await getSupabase().from("categories").delete().eq("id", id);
+  const { data, error } = await getSupabase().from("categories").delete().eq("id", id).select("id");
   if (error) throw error;
+  if (!data.length) throw new Error(NOT_ALLOWED);
 }
 
 export async function saveQuestion(q: Omit<Question, "id"> & { id?: string }): Promise<Question> {
@@ -74,13 +79,15 @@ export async function saveQuestion(q: Omit<Question, "id"> & { id?: string }): P
         .update({ difficulty: q.difficulty, question: q.question, answer: q.answer })
         .eq("id", q.id)
         .select()
-        .single()
+        .maybeSingle()
     : await db.insert(q).select().single();
   if (error) throw error;
+  if (!data) throw new Error(NOT_ALLOWED);
   return data;
 }
 
 export async function deleteQuestion(id: string): Promise<void> {
-  const { error } = await getSupabase().from("questions").delete().eq("id", id);
+  const { data, error } = await getSupabase().from("questions").delete().eq("id", id).select("id");
   if (error) throw error;
+  if (!data.length) throw new Error(NOT_ALLOWED);
 }
