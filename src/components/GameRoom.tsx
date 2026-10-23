@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import AppHeader from "./AppHeader";
 import Board from "./Board";
+import BoardPlanner from "./BoardPlanner";
 import Lobby, { InviteFriends } from "./Lobby";
 import QuestionView from "./QuestionView";
 import Scoreboard from "./Scoreboard";
@@ -110,9 +111,19 @@ export default function GameRoom({ id }: { id: string }) {
             In Runde {state.round + 1} gibt es neue Kategorien und doppelte Punkte.
           </p>
           {state.is_host ? (
-            <button type="button" className={`${primaryButton} px-8 py-4 text-xl`} onClick={() => act(() => api.nextRound(state.id))}>
-              Runde {state.round + 1} starten
-            </button>
+            <>
+              <section className="w-full max-w-6xl rounded-2xl bg-panel p-6 text-left">
+                <h3 className="mb-4 font-bold">Board für Runde {state.round + 1} festlegen</h3>
+                <BoardPlanner
+                  gameId={state.id}
+                  rounds={[state.round + 1]}
+                  playedNames={state.categories.map((c) => c.name)}
+                />
+              </section>
+              <button type="button" className={`${primaryButton} px-8 py-4 text-xl`} onClick={() => act(() => api.nextRound(state.id))}>
+                Runde {state.round + 1} starten
+              </button>
+            </>
           ) : (
             <p className="text-white/80">Warte auf {state.host.username}…</p>
           )}

@@ -20,6 +20,20 @@ export async function loadAdminData(): Promise<{ categories: Category[]; questio
   return { categories: cats.data, questions };
 }
 
+export type QuestionSummary = Omit<Question, "answer">;
+
+/** Kategorien und Fragen ohne Antworten, z. B. für den Board-Planer des Hosts. */
+export async function loadQuestionCatalog(): Promise<{ categories: Category[]; questions: QuestionSummary[] }> {
+  const db = getSupabase();
+  const [cats, qs] = await Promise.all([
+    db.from("categories").select("id, name").order("name"),
+    db.from("questions").select("id, category_id, difficulty, question").order("created_at"),
+  ]);
+  if (cats.error) throw cats.error;
+  if (qs.error) throw qs.error;
+  return { categories: cats.data, questions: qs.data };
+}
+
 // Ohne Rechte meldet Supabase bei update/delete keinen Fehler, sondern ändert einfach nichts.
 // Deshalb zählen wir die betroffenen Zeilen. (questions.answer ist nicht lesbar, daher kein .select() danach.)
 const NOT_ALLOWED = "Keine Berechtigung. Ist dein Account als Admin eingetragen?";

@@ -56,6 +56,15 @@ export type MyGame = {
 
 export type Invite = { game_id: string; host_username: string; mode: Mode; created_at: string };
 
+/** Ein Spaltenplatz im Board-Plan; null = zufällig. questions[i] gehört zur Stufe i + 1. */
+export type SetupSlot = { category_id: string | null; questions: (string | null)[] };
+export type GameSetup = {
+  categories_mode: "random" | "choose";
+  questions_mode: "random" | "choose";
+  /** Index 0 = Runde 1 */
+  rounds: SetupSlot[][];
+};
+
 /** Ruft eine Postgres-Funktion auf; Fehlermeldungen aus der Datenbank sind schon deutsch. */
 export async function rpc<T = void>(fn: string, args?: Record<string, unknown>): Promise<T> {
   const { data, error } = await getSupabase().rpc(fn, args);
@@ -76,6 +85,8 @@ export const api = {
   invite: (game: string, user: string) => rpc("invite_to_game", { p_game: game, p_user: user }),
   respondInvite: (game: string, accept: boolean) => rpc("respond_invite", { p_game: game, p_accept: accept }),
   start: (game: string) => rpc("start_game", { p_game: game }),
+  getSetup: (game: string) => rpc<GameSetup | null>("get_game_setup", { p_game: game }),
+  setSetup: (game: string, setup: GameSetup) => rpc("set_game_setup", { p_game: game, p_setup: setup }),
   openCell: (game: string, cell: string) => rpc("open_cell", { p_game: game, p_cell: cell }),
   buzz: (game: string) => rpc("buzz", { p_game: game }),
   submitAnswer: (game: string, text: string) => rpc("submit_answer", { p_game: game, p_text: text }),

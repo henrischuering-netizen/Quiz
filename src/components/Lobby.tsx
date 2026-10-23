@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
+import BoardPlanner from "./BoardPlanner";
 import { api, type Friend, type GameState } from "@/lib/api";
+import { ROUND_MULTIPLIER } from "@/lib/game";
 import { primaryButton, secondaryButton } from "./ui";
 
 type Props = { state: GameState; act: (action: () => Promise<unknown>) => Promise<void> };
@@ -49,7 +51,7 @@ export function InviteFriends({ state, act }: Props) {
 
 export default function Lobby({ state, act }: Props) {
   return (
-    <div className="mx-auto grid w-full max-w-4xl gap-6 md:grid-cols-2">
+    <div className="mx-auto grid w-full max-w-6xl gap-6 md:grid-cols-2">
       <section className="flex flex-col gap-4 rounded-2xl bg-panel p-6">
         <div>
           <div className="text-sm text-white/60">Beitrittscode</div>
@@ -91,6 +93,16 @@ export default function Lobby({ state, act }: Props) {
         <section className="rounded-2xl bg-panel p-6">
           <h2 className="mb-3 font-bold">Freunde einladen</h2>
           <InviteFriends state={state} act={act} />
+        </section>
+      )}
+
+      {state.is_host && (
+        <section className="rounded-2xl bg-panel p-6 md:col-span-2">
+          <h2 className="mb-1 font-bold">Board festlegen</h2>
+          <p className="mb-4 text-sm text-white/60">
+            Nur du siehst diese Auswahl. Was auf „zufällig“ steht, wird beim Rundenstart gezogen.
+          </p>
+          <BoardPlanner gameId={state.id} rounds={ROUND_MULTIPLIER.map((_, i) => i + 1)} />
         </section>
       )}
     </div>
